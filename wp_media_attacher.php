@@ -5,47 +5,56 @@ _p('Unattached media count: ' . count($unattached));
 
 foreach($unattached as $ua){
 
-	$filename = get_filename_from_attachment($ua);
+	//$filename = get_filename_from_attachment($ua);
+	$filename = pathinfo(get_attached_file($ua->ID))['filename'];
+
 	_p("Searching matching posts for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
-
-	$matching_post = search_post_content($filename);
-
+	$matching_post = search_post_content($filename, "post");
 	if($matching_post){
 		_p("   Matching post: '" . $matching_post[0]->post_title . "' (ID: " . $matching_post[0]->ID . ")");
-	} else {
-		
+		attach_media_to_post($ua, $matching_post[0]);
 	}
-	
+
+	_p("Searching matching pages for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
+	$matching_post = search_post_content($filename, "page");
+	if($matching_post){
+		_p("   Matching page: '" . $matching_post[0]->post_title . "' (ID: " . $matching_post[0]->ID . ")");
+		attach_media_to_post($ua, $matching_post[0]);
+	}
 }
 
 wp_reset_postdata();
 
-/* - - - - - */
 
 /**
  * Attaches the given media attachment to the given post
  */
 function attach_media_to_post($media, $post){
-	$args = array(
-		'ID' => $media->ID,);
 
-	_p(wp_insert_attachment($args, false, $post->ID));
-}
+	_p("   Attaching " .$media->ID . " to post " . $post->ID);
 
-/**
- * Prints a message when the script is run with --debug. 
- * Accepts both strings and arrays.
- */
-function _p($array){
-	WP_CLI::debug(print_r($array, true),  $group = false);
+	$fp = get_attached_file( $media->ID );
+	$ft = wp_check_filetype( $fp );
+
+	$media->post_mime_type = $ft['type'];
+	$media->comment_status = closed;
+	$media->post_title = $post->post_title . " (media)";
+
+	$attach_id = wp_insert_attachment($media, $fp, $post->ID);	
+	$attach_data = wp_generate_attachment_metadata( $attach_id, $fp );
+	$update_status = wp_update_attachment_metadata( $attach_id, $attach_data );
+
+	if(!empty($update_status)){
+		_p(      "** FAILED");
+	}
 }
 
 /**
  * Gets filename without extension from full filepath
  */
-function get_filename_from_attachment($attachment){
-	return pathinfo(get_attached_file($attachment->ID))['filename'];
-}
+//function get_filename_from_attachment($attachment){
+//	return pathinfo(get_attached_file($attachment->ID))['filename'];
+//}
 
 /**
  * Get a list of all unatached media files in the library
@@ -53,7 +62,7 @@ function get_filename_from_attachment($attachment){
 function get_all_unattached_media(){
 	$the_query = array(
 		'post_type' => 'attachment',
-		'numberposts' => /*-1*/15,
+		'numberposts' => -1,
 		'post_status' => null,
 		'post_parent' => 0
 	); 
@@ -62,12 +71,12 @@ function get_all_unattached_media(){
 }
 
 /** 
- * Searches all posts for given string. 
+ * Searches all posts for given string and page type (must be: post or page)
  * Returns array of matching posts or null if no posts are found.
  */
-function search_post_content($search_string){
+function search_post_content($search_string, $pagetype){
 	global $wpdb;
-	$sql = "SELECT * FROM {$wpdb->posts} WHERE post_content LIKE '%" . $search_string . "%' AND post_type = 'post';";
+	$sql = "SELECT * FROM {$wpdb->posts} WHERE post_content LIKE '%" . $search_string . "%' AND post_type = '" . $pagetype . "';";
 	$result = $wpdb->get_results($sql);
 
   	if ($result){
@@ -83,34 +92,10 @@ function search_post_content($search_string){
 	}
 }
 
-function search_post_title ($search_string){
-	WP_CLI::log("Finding posts");
-		
-	$the_query = new WP_Query(array( 
-		's'		=>	$search_string,
-		'posts_per_page' => '-1'
-	));
-	
-	if ( $the_query->have_posts() ) {
-	    while ( $the_query->have_posts() ) {
-	        $the_query->the_post();
-	        _p(" P: " . get_the_post());
-	    }
-	} else {
-		_p("No posts found");
-	}
-	_p("Total posts found: " . count( $args->posts ));
+/**
+ * Prints a message when the script is run with --debug. 
+ * Accepts both strings and arrays.
+ */
+function _p($array){
+	WP_CLI::debug(print_r($array, true),  $group = false);
 }
-
-
-function get_attachments(){
-$media = get_attached_media( 'image', 19147 /*get_the_post()*/ );
-_p($media);
-foreach ($media as $image) {  
-	$ximage =  wp_get_attachment_image_src($image->ID,'medium');
-	_p($ximage[0]);
-}
-}
-
-
-?>
