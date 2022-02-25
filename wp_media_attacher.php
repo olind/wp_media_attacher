@@ -5,7 +5,6 @@ _p('Unattached media count: ' . count($unattached));
 
 foreach($unattached as $ua){
 
-	//$filename = get_filename_from_attachment($ua);
 	$filename = pathinfo(get_attached_file($ua->ID))['filename'];
 
 	_p("Searching matching posts for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
@@ -21,6 +20,7 @@ foreach($unattached as $ua){
 		_p("   Matching page: '" . $matching_post[0]->post_title . "' (ID: " . $matching_post[0]->ID . ")");
 		attach_media_to_post($ua, $matching_post[0]);
 	}
+	
 }
 
 wp_reset_postdata();
@@ -48,13 +48,6 @@ function attach_media_to_post($media, $post){
 		_p(      "** FAILED");
 	}
 }
-
-/**
- * Gets filename without extension from full filepath
- */
-//function get_filename_from_attachment($attachment){
-//	return pathinfo(get_attached_file($attachment->ID))['filename'];
-//}
 
 /**
  * Get a list of all unatached media files in the library
