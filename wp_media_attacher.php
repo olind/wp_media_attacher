@@ -7,6 +7,13 @@ foreach($unattached as $ua){
 
 	$filename = pathinfo(get_attached_file($ua->ID))['filename'];
 
+	_p("Searching matching pages for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
+	$matching_post = search_post_content($filename, "page");
+	if($matching_post){
+		_p("   Matching page: '" . $matching_post[0]->post_title . "' (ID: " . $matching_post[0]->ID . ")");
+		attach_media_to_post($ua, $matching_post[0]);
+	}
+
 	_p("Searching matching posts for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
 	$matching_post = search_post_content($filename, "post");
 	if($matching_post){
@@ -14,13 +21,6 @@ foreach($unattached as $ua){
 		attach_media_to_post($ua, $matching_post[0]);
 	}
 
-	_p("Searching matching pages for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
-	$matching_post = search_post_content($filename, "page");
-	if($matching_post){
-		_p("   Matching page: '" . $matching_post[0]->post_title . "' (ID: " . $matching_post[0]->ID . ")");
-		attach_media_to_post($ua, $matching_post[0]);
-	}
-	
 }
 
 wp_reset_postdata();
