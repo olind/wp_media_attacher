@@ -3,17 +3,25 @@
 $unattached = get_all_unattached_media();
 _p('Unattached media count: ' . count($unattached));
 
+/** 
+ * It is possible to reattach from one post to another with:
+ * $unattached = get_all_attached_media_forl_post(page_or_post_id);
+* _p('Re-attaching media count: ' . count($unattached));
+ * 
+*/
+
 foreach($unattached as $ua){
 
 	$filename = pathinfo(get_attached_file($ua->ID))['filename'];
 
-	_p("Searching matching pages for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
+	//NOTE! You must first set the unattached images to posts - Not sure if you want to set it to pages at all.
+	/*_p("Searching matching pages for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
 	$matching_post = search_post_content($filename, "page");
 	if($matching_post){
 		_p("   Matching page: '" . $matching_post[0]->post_title . "' (ID: " . $matching_post[0]->ID . ")");
 		attach_media_to_post($ua, $matching_post[0]);
-	}
-
+	}*/
+	
 	_p("Searching matching posts for attachment: '" . $filename ."' (ID: " . $ua->ID . ")");
 	$matching_post = search_post_content($filename, "post");
 	if($matching_post){
@@ -62,6 +70,22 @@ function get_all_unattached_media(){
 	$attachments = get_posts($the_query);
 	return $attachments;
 }
+
+/**
+ * Get a list of all media files attached to the given post_id
+ */
+function get_all_attached_media_forl_post($post_id){
+	$the_query = array(
+		'post_type' => 'attachment',
+		'numberposts' => -1,
+		'post_status' => null,
+		'post_parent' => $post_id
+	); 
+	$attachments = get_posts($the_query);
+	return $attachments;
+}
+
+
 
 /** 
  * Searches all posts for given string and page type (must be: post or page)
